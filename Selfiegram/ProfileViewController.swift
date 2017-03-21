@@ -28,14 +28,6 @@ class ProfileViewController: UIViewController, UIImagePickerControllerDelegate, 
         
         if let user = PFUser.current() {
             usernameLabel.text = user.username
-            if let imageFile = user["avatarImage"] as? PFFile {
-                
-                imageFile.getDataInBackground(block: { (data, error) -> Void in
-                    if let imageData = data {
-                        self.profileImageView.image = UIImage(data: imageData)
-                    }
-                })
-            }
         }
     }
     
