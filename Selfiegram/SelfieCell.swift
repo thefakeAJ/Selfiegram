@@ -15,6 +15,49 @@ class SelfieCell: UITableViewCell {
     @IBOutlet weak var usernameLabel: UILabel!
     @IBOutlet weak var commentLabel: UILabel!    
     @IBOutlet weak var likeButton: UIButton!
+    @IBOutlet weak var heartAnimationView: UIImageView!
+    
+    var post:Post? {
+        didSet{
+            if let post = post {
+                // I've added this line to prevent flickering of images
+                // We are inside the cellForRowAtIndexPath method that gets called everytime we lay out a cell
+                // This always resets the image to blank, waits for the image to download, and then sets it
+                selfieImageView.image = nil
+                
+                let imageFile = post.image
+                imageFile.getDataInBackground(block: { (data, error) -> Void in
+                    if let data = data {
+                        let image = UIImage(data: data)
+                        self.selfieImageView.image = image
+                    }
+                })
+                
+                usernameLabel.text = post.user.username
+                commentLabel.text = post.comment
+                
+                // set the likeButton defaulted to false
+                likeButton.isSelected = false
+                
+                // query the likes property on post
+                let query = post.likes.query()
+                query.findObjectsInBackground(block: { (users, error) -> Void in
+                    
+                    if let users = users as? [PFUser]{
+                        for user in users {
+                            // If we find that the current user's objectId in our collection
+                            // of likes we set the likeButton to selected
+                            // objectId is a great way to compare if two objects are equal
+                            if user.objectId == PFUser.current()?.objectId {
+                                self.likeButton.isSelected = true
+                            }
+                        }
+                    }
+                })
+                
+            }
+        }
+    }
     
     override func awakeFromNib() {
         super.awakeFromNib()
@@ -100,7 +143,28 @@ class SelfieCell: UITableViewCell {
             
         }
     }
-    @IBAction func likeButtonClicked(_ sender: Any) {
+
+    
+    func tapAnimation() {
+        
+        // set heartAnimationView to be very tiny and not hidden
+        self.heartAnimationView.transform = CGAffineTransform(scaleX: 0, y: 0)
+        self.heartAnimationView.isHidden = false
+        
+        //animation for 1 second, no delay
+        UIView.animate(withDuration: 1.0, delay: 0, options: [], animations: { () -> Void in
+            
+            // during our animation change heartAnimationView to be 3X what it is on storyboard
+            self.heartAnimationView.transform = CGAffineTransform(scaleX: 3, y: 3)
+            
+        }) { (success) -> Void in
+            
+            // when animation is complete set heartAnimationView to be hidden
+            self.heartAnimationView.isHidden = true
+        }
+        
+        likeButtonClicked(sender: likeButton)
+        
     }
     
     override func setSelected(_ selected: Bool, animated: Bool) {
@@ -109,45 +173,5 @@ class SelfieCell: UITableViewCell {
         // Configure the view for the selected state
     }
     
-    var post:Post? {
-        didSet{
-            if let post = post {
-                // I've added this line to prevent flickering of images
-                // We are inside the cellForRowAtIndexPath method that gets called everytime we lay out a cell
-                // This always resets the image to blank, waits for the image to download, and then sets it
-                selfieImageView.image = nil
-                
-                let imageFile = post.image
-                imageFile.getDataInBackground(block: { (data, error) -> Void in
-                    if let data = data {
-                        let image = UIImage(data: data)
-                        self.selfieImageView.image = image
-                    }
-                })
-                
-                usernameLabel.text = post.user.username
-                commentLabel.text = post.comment
-                
-                // set the likeButton defaulted to false
-                likeButton.isSelected = false
-                
-                // query the likes property on post
-                let query = post.likes.query()
-                query.findObjectsInBackground(block: { (users, error) -> Void in
-                    
-                    if let users = users as? [PFUser]{
-                        for user in users {
-                            // If we find that the current user's objectId in our collection
-                            // of likes we set the likeButton to selected
-                            // objectId is a great way to compare if two objects are equal
-                            if user.objectId == PFUser.current()?.objectId {
-                                self.likeButton.isSelected = true
-                            }
-                        }
-                    }
-                })
-                
-            }
-        }
-    }
+    
 }
